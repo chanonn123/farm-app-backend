@@ -17,9 +17,8 @@ const pool = new Pool({
 
 
 app.get('/todos', async (req, res) => {
-    const userId = req.query.userId;
     try {
-        const result = await pool.query('SELECT * FROM todos WHERE user_id = $1', [userId]);
+        const result = await pool.query('SELECT * FROM todos WHERE user_id = $1', [req.query.userId]);
         res.json(result.rows);
     } catch (error) {
         console.error(error);
@@ -40,13 +39,13 @@ app.post('/todos', async (req, res) => {
 
 app.put('/todos/:id', async (req, res) => {
     const { id } = req.params;
-    const { task, userId } = req.body;
+    const { task } = req.body;
     try {
-        const result = await pool.query('UPDATE todos SET task = $1 WHERE id = $2 AND user_id = $3 RETURNING *', [task, id, userId]);
+        const result = await pool.query('UPDATE todos SET task = $1 WHERE id = $2 RETURNING *', [task, id]);
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
         } else {
-            res.status(404).send('Todo not found or does not belong to user');
+            res.status(404).send('Todo not found');
         }
     } catch (error) {
         console.error(error);
@@ -58,19 +57,22 @@ app.delete('/todos/:id', async (req, res) => {
     const { id } = req.params;
     const { userId } = req.body;
     try {
-        await pool.query('DELETE FROM todos WHERE id = $1 AND user_id = $2', [id, userId]);
-        res.status(204).send();
+        const result = await pool.query('DELETE FROM todos WHERE id = $1 AND user_id = $2', [id, userId]);
+        if (result.rowCount > 0) {
+            res.status(204).send();
+        } else {
+            res.status(404).send('Todo not found or does not belong to user');
+        }
     } catch (error) {
         console.error(error);
         res.status(500).send('Server Error');
     }
 });
 
-
+// Harvest Routes
 app.get('/harvest', async (req, res) => {
-    const userId = req.query.userId;
     try {
-        const result = await pool.query('SELECT * FROM harvest_records WHERE user_id = $1', [userId]);
+        const result = await pool.query('SELECT * FROM harvest_records WHERE user_id = $1', [req.query.userId]);
         res.json(result.rows);
     } catch (error) {
         console.error(error);
@@ -91,13 +93,13 @@ app.post('/harvest', async (req, res) => {
 
 app.put('/harvest/:id', async (req, res) => {
     const { id } = req.params;
-    const { crop, quantity, userId } = req.body;
+    const { crop, quantity } = req.body;
     try {
-        const result = await pool.query('UPDATE harvest_records SET crop = $1, quantity = $2 WHERE id = $3 AND user_id = $4 RETURNING *', [crop, quantity, id, userId]);
+        const result = await pool.query('UPDATE harvest_records SET crop = $1, quantity = $2 WHERE id = $3 RETURNING *', [crop, quantity, id]);
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
         } else {
-            res.status(404).send('Harvest record not found or does not belong to user');
+            res.status(404).send('Harvest record not found');
         }
     } catch (error) {
         console.error(error);
@@ -109,8 +111,12 @@ app.delete('/harvest/:id', async (req, res) => {
     const { id } = req.params;
     const { userId } = req.body;
     try {
-        await pool.query('DELETE FROM harvest_records WHERE id = $1 AND user_id = $2', [id, userId]);
-        res.status(204).send();
+        const result = await pool.query('DELETE FROM harvest_records WHERE id = $1 AND user_id = $2', [id, userId]);
+        if (result.rowCount > 0) {
+            res.status(204).send();
+        } else {
+            res.status(404).send('Harvest record not found or does not belong to user');
+        }
     } catch (error) {
         console.error(error);
         res.status(500).send('Server Error');
