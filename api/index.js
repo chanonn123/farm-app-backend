@@ -7,7 +7,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors({
-    origin: 'https://farm-management-app-navy.vercel.app/'
+    origin: 'https://farm-management-app-navy.vercel.app'
 }));
 app.use(bodyParser.json());
 
